@@ -3,6 +3,8 @@
 #include <fstream>
 #include <array>
 #include <windows.h>
+#include <cmath>
+#include <vector>
 #include "termcolor.h"
 
 using namespace std;
@@ -15,11 +17,29 @@ char pacmanIcon = '@';
 int pacmanX = 13;
 int pacmanY = 23;
 
+int rGhostX = 13;
+int rGhostY = 11;
+
+int oGhostX = 14;
+int oGhostY = 14;
+
+int bGhostX = 12;
+int bGhostY = 14;
+
+int pGhostX = 13;
+int pGhostY = 14;
+
 char coinIcon = (char)249u;
 char ghostIcon = (char)253u;
 
 enum DIRECTION {UP, DOWN, RIGHT, LEFT, ELSE};
-enum LOCATION {LEFTPORT, RIGHTPORT, EMPTY, COIN, SUPERCOIN, WALL, PACMAN, REDGHOST, ORANGEGHOST, BLUEGHOST, PINKGHOST};
+enum LOCATION {LEFTPORT, RIGHTPORT, EMPTY, COIN, SUPERCOIN, PACMAN, WALL, REDGHOST, ORANGEGHOST, BLUEGHOST, PINKGHOST};
+
+LOCATION varRGhost = LOCATION::EMPTY;
+LOCATION varOGhost = LOCATION::EMPTY;
+LOCATION varPGhost = LOCATION::EMPTY;
+LOCATION varBGhost = LOCATION::EMPTY;
+DIRECTION redGhostDir = DIRECTION::DOWN;
 
 void updateScreen() {
     BOOL WINAPI WriteConsoleOutput(
@@ -55,10 +75,6 @@ void loadMapFromFile(string mapPath) {
                 else if (elem == '0') map[i][j] = LOCATION::EMPTY;
                 else if (elem == '$') map[i][j] = LOCATION::LEFTPORT;
                 else if (elem == '%') map[i][j] = LOCATION::RIGHTPORT;
-                else if (elem == 'r') map[i][j] = LOCATION::REDGHOST;
-                else if (elem == 'b') map[i][j] = LOCATION::BLUEGHOST;
-                else if (elem == 'p') map[i][j] = LOCATION::PINKGHOST;
-                else if (elem == 'o') map[i][j] = LOCATION::ORANGEGHOST;
                 else map[i][j] = LOCATION::WALL;
             }
         }
@@ -141,25 +157,87 @@ bool movePacmanTo(DIRECTION dir) {
     }
 }
 
+double distanceFromDot(int curX, int curY, int targetX, int targetY) {
+    int vectorX = targetX - curX;
+    int vectorY = targetY - curY;
+    return sqrt(vectorX * vectorX + vectorY * vectorY);
+}
+
+void redGhostMove() {
+    int minX = rGhostX;
+    int minY = rGhostY;
+    double minDistance = 1000;
+    if (redGhostDir != DIRECTION::DOWN && rGhostY - 1 > 0 && map[rGhostY - 1][rGhostX] <= 5) {
+        double distance = distanceFromDot(rGhostX, rGhostY - 1, pacmanX, pacmanY);
+        if (distance < minDistance) {
+            minX = rGhostX;
+            minY = rGhostY - 1;
+            minDistance = distance;
+            redGhostDir = DIRECTION::UP;
+        }
+    }
+    if (redGhostDir != DIRECTION::UP && rGhostY + 1 < 31 && map[rGhostY + 1][rGhostX] <= 5) {
+        double distance = distanceFromDot(rGhostX, rGhostY + 1, pacmanX, pacmanY);
+        if (distance < minDistance) {
+            minX = rGhostX;
+            minY = rGhostY + 1;
+            minDistance = distance;
+            redGhostDir = DIRECTION::DOWN;
+        }
+    }
+    if (redGhostDir != DIRECTION::LEFT && rGhostX + 1 < 28 && map[rGhostY][rGhostX + 1] <= 5) {
+        double distance = distanceFromDot(rGhostX + 1, rGhostY, pacmanX, pacmanY);
+        if (distance < minDistance) {
+            minX = rGhostX + 1;
+            minY = rGhostY;
+            minDistance = distance;
+            redGhostDir = DIRECTION::RIGHT;
+        }
+    }
+    if (redGhostDir != DIRECTION::RIGHT && rGhostX - 1 >= 0 && map[rGhostY][rGhostX - 1] <= 5) {
+        double distance = distanceFromDot(rGhostX - 1, rGhostY, pacmanX, pacmanY);
+        if (distance < minDistance) {
+            minX = rGhostX - 1;
+            minY = rGhostY;
+            minDistance = distance;
+            redGhostDir = DIRECTION::LEFT;
+        }
+    }
+    map[rGhostY][rGhostX] = varRGhost;
+    varRGhost = (LOCATION)map[minY][minX];
+    map[minY][minX] = LOCATION::REDGHOST;
+    rGhostX = minX;
+    rGhostY = minY;
+}
+
+
+
 int main() {
     //set location
     loadMapFromFile("map.txt");
     map[pacmanY][pacmanX] = LOCATION::PACMAN;
+    map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
+    map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
+    map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
+    map[rGhostY][rGhostX] = LOCATION::REDGHOST;
     DIRECTION dir, curDir;
     dir = DIRECTION::LEFT;
 
     cout << "Press Enter\n";
     while (!(GetAsyncKeyState(VK_RETURN) & 0x8000)){}//wait enter 
-    
     while (1) {
         show();
-        //set direction and move
+        //set direction and pacman move
         curDir = keyHandler();
         if (dir != curDir && curDir != DIRECTION::ELSE) {
             if (!movePacmanTo(curDir)) movePacmanTo(dir);
             else dir = curDir;
         } else movePacmanTo(dir);
+        //ghost move
+        redGhostMove();
         cout << "Score: " << score << "\n";
+        cout << distanceFromDot(rGhostX, rGhostY, pacmanX, pacmanY) << "\n";
+        cout << "current red direction: " << redGhostDir << "\n";
     }
     return 0;
 }
