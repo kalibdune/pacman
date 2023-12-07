@@ -34,19 +34,23 @@ char coinIcon = (char)249u;
 char ghostIcon = (char)253u;
 
 enum DIRECTION {UP, DOWN, RIGHT, LEFT, ELSE};
-enum LOCATION {LEFTPORT, RIGHTPORT, EMPTY, COIN, SUPERCOIN, PACMAN, WALL, REDGHOST, ORANGEGHOST, BLUEGHOST, PINKGHOST, DOOR, GHOSTBLOCKER};
+enum LOCATION {LEFTPORT, RIGHTPORT, EMPTY, COIN, SUPERCOIN, PACMAN, WALL, REDGHOST, ORANGEGHOST, BLUEGHOST, PINKGHOST, DOOR};
 
-LOCATION pacmanRegular[6] = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::GHOSTBLOCKER};
-LOCATION ghostRegulaer[7] = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::PACMAN};
+vector<LOCATION> pacmanRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::DOOR};
+vector<LOCATION> ghostRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::PACMAN};
 
-LOCATION varRGhost = LOCATION::EMPTY;
+LOCATION varRGhost = LOCATION::COIN;
 LOCATION varOGhost = LOCATION::EMPTY;
 LOCATION varPGhost = LOCATION::EMPTY;
 LOCATION varBGhost = LOCATION::EMPTY;
 DIRECTION rGhostDir = DIRECTION::DOWN;
+DIRECTION oGhostDir = DIRECTION::LEFT;
+DIRECTION pGhostDir = DIRECTION::LEFT;
 
-bool checkPermission(LOCATION texture, LOCATION *arr, int max) {
-    for (int i = 0; i < max; ++i) if (arr[i] == texture) return true;
+bool checkPermission(int texture, vector<LOCATION> arr) {
+    for (int i = 0; i < arr.size(); ++i) { 
+        if (arr[i] == texture) return true;
+    };
     return false;
 }
 
@@ -84,8 +88,7 @@ void loadMapFromFile(string mapPath) {
                 else if (elem == '0') map[i][j] = LOCATION::EMPTY;
                 else if (elem == '$') map[i][j] = LOCATION::LEFTPORT;
                 else if (elem == '%') map[i][j] = LOCATION::RIGHTPORT;
-                else if (elem == '=') map[i][j] = LOCATION::GHOSTBLOCKER;
-                else if (elem == '?') map[i][j] = LOCATION::DOOR;
+                else if (elem == '=') map[i][j] = LOCATION::DOOR;
                 else map[i][j] = LOCATION::WALL;
             }
         }
@@ -99,7 +102,6 @@ void show() {
         for (int j = 0; j < 28; ++j) {
             hidecursor();
             switch (map[i][j]) {
-            case LOCATION::GHOSTBLOCKER:
             case LOCATION::DOOR:
             case LOCATION::LEFTPORT:
             case LOCATION::RIGHTPORT:
@@ -141,21 +143,21 @@ DIRECTION keyHandler() {
     else return DIRECTION::ELSE;
 }
 
-bool movePacmanTo(DIRECTION dir, int &textureBlock) {
+bool movePacmanTo(DIRECTION dir, vector<LOCATION> textureArr) {
     bool move = false;
-    if (dir == DIRECTION::UP && pacmanY - 1 > 0 && map[pacmanY - 1][pacmanX] <= textureBlock) {
+    if (dir == DIRECTION::UP && pacmanY - 1 > 0 && checkPermission(map[pacmanY - 1][pacmanX], textureArr)) {
         map[pacmanY][pacmanX] = LOCATION::EMPTY;
         --pacmanY;
         move = true;
-    } else if (dir == DIRECTION::DOWN && pacmanY + 1 < 31 && map[pacmanY + 1][pacmanX] <= textureBlock) {
+    } else if (dir == DIRECTION::DOWN && pacmanY + 1 < 31 && checkPermission(map[pacmanY + 1][pacmanX], textureArr)) {
         map[pacmanY][pacmanX] = LOCATION::EMPTY;
         ++pacmanY;
         move = true;
-    } else if (dir == DIRECTION::RIGHT && pacmanX + 1 < 28 && map[pacmanY][pacmanX + 1] <= textureBlock) {
+    } else if (dir == DIRECTION::RIGHT && pacmanX + 1 < 28 && checkPermission(map[pacmanY][pacmanX + 1], textureArr)) {
         map[pacmanY][pacmanX] = LOCATION::EMPTY;
         ++pacmanX;
         move = true;
-    } else if (dir == DIRECTION::LEFT && pacmanX - 1 >= 0 && map[pacmanY][pacmanX - 1] <= textureBlock) {
+    } else if (dir == DIRECTION::LEFT && pacmanX - 1 >= 0 && checkPermission(map[pacmanY][pacmanX - 1], textureArr)) {
         map[pacmanY][pacmanX] = LOCATION::EMPTY;
         --pacmanX;
         move = true;
@@ -176,12 +178,12 @@ double distanceFromDot(int curX, int curY, int targetX, int targetY) {
     return sqrt(vectorX * vectorX + vectorY * vectorY);
 }
 
-void ghostMove(int &ghostX, int &ghostY, int &targetX, int &targetY, DIRECTION &ghostDir, int textureBlock) {
+void ghostMove(int& ghostX, int& ghostY, int& targetX, int& targetY, DIRECTION& ghostDir, LOCATION& varGhost, LOCATION ghostType, int textureBlock) {
     int minX = ghostX;
     int minY = ghostY;
     DIRECTION localeDir = ghostDir;
     double minDistance = 1000;
-    if (rGhostDir != DIRECTION::DOWN && ghostY - 1 > 0 && map[ghostY - 1][ghostX] <= textureBlock) {
+    if (ghostDir != DIRECTION::DOWN && ghostY - 1 > 0 && map[ghostY - 1][ghostX] <= textureBlock) {
         double distance = distanceFromDot(ghostX, ghostY - 1, targetX, targetY);
         if (distance < minDistance) {
             minX = ghostX;
@@ -190,7 +192,7 @@ void ghostMove(int &ghostX, int &ghostY, int &targetX, int &targetY, DIRECTION &
             localeDir = DIRECTION::UP;
         }
     }
-    if (rGhostDir != DIRECTION::UP && ghostY + 1 < 31 && map[ghostY + 1][ghostX] <= textureBlock) {
+    if (ghostDir != DIRECTION::UP && ghostY + 1 < 31 && map[ghostY + 1][ghostX] <= textureBlock) {
         double distance = distanceFromDot(ghostX, ghostY + 1, targetX, targetY);
         if (distance < minDistance) {
             minX = ghostX;
@@ -199,7 +201,7 @@ void ghostMove(int &ghostX, int &ghostY, int &targetX, int &targetY, DIRECTION &
             localeDir = DIRECTION::DOWN;
         }
     }
-    if (rGhostDir != DIRECTION::LEFT && ghostX + 1 < 28 && map[ghostY][ghostX + 1] <= textureBlock) {
+    if (ghostDir != DIRECTION::LEFT && ghostX + 1 < 28 && map[ghostY][ghostX + 1] <= textureBlock) {
         double distance = distanceFromDot(ghostX + 1, ghostY, targetX, targetY);
         if (distance < minDistance) {
             minX = ghostX + 1;
@@ -208,7 +210,7 @@ void ghostMove(int &ghostX, int &ghostY, int &targetX, int &targetY, DIRECTION &
             localeDir = DIRECTION::RIGHT;
         }
     }
-    if (rGhostDir != DIRECTION::RIGHT && ghostX - 1 >= 0 && map[ghostY][ghostX - 1] <= textureBlock) {
+    if (ghostDir != DIRECTION::RIGHT && ghostX - 1 >= 0 && map[ghostY][ghostX - 1] <= textureBlock) {
         double distance = distanceFromDot(ghostX - 1, ghostY, targetX, targetY);
         if (distance < minDistance) {
             minX = ghostX - 1;
@@ -217,10 +219,13 @@ void ghostMove(int &ghostX, int &ghostY, int &targetX, int &targetY, DIRECTION &
             localeDir = DIRECTION::LEFT;
         }
     }
-    rGhostDir = localeDir;
-    map[ghostY][ghostX] = varRGhost;
-    varRGhost = (LOCATION)map[minY][minX];
-    map[minY][minX] = LOCATION::REDGHOST;
+    ghostDir = localeDir;
+    map[ghostY][ghostX] = varGhost;
+    //procesing teleports
+    if (map[minY][minX] == LOCATION::LEFTPORT) minX = 26;
+    else if (map[minY][minX] == LOCATION::RIGHTPORT) minX = 1;
+    varGhost = (LOCATION)map[minY][minX];
+    map[minY][minX] = ghostType;
     ghostX = minX;
     ghostY = minY;
 }
@@ -245,11 +250,13 @@ int main() {
         //set direction and pacman move
         curDir = keyHandler();
         if (dir != curDir && curDir != DIRECTION::ELSE) {
-            if (!movePacmanTo(curDir, pacmanBlock)) movePacmanTo(dir, pacmanBlock);
+            if (!movePacmanTo(curDir, pacmanRegular)) movePacmanTo(dir, pacmanRegular);
             else dir = curDir;
-        } else movePacmanTo(dir, pacmanBlock);
+        } else movePacmanTo(dir, pacmanRegular);
         //ghost move
-        ghostMove(rGhostX, rGhostY, pacmanX, pacmanY, rGhostDir, 5);
+        ghostMove(rGhostX, rGhostY, pacmanX, pacmanY, rGhostDir, varRGhost, LOCATION::REDGHOST, 5);
+        //ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, 5);
+
         cout << "Score: " << score << "\n";
         //cout << distanceFromDot(rGhostX, rGhostY, pacmanX, pacmanY) << "\n";
     }
