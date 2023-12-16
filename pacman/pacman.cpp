@@ -28,13 +28,13 @@ int rGhostY = 11;
 int rLastGhostX = 0;
 int rLastGhostY = 0;
 
-int oGhostX = 14;
-int oGhostY = 14;
+int oGhostX = 18;//14;  
+int oGhostY = 17;//14;
 int oLastGhostX = 0;
 int oLastGhostY = 0;
 
-int bGhostX = 12;
-int bGhostY = 14;
+int bGhostX = 9;//12;
+int bGhostY = 11;//14;
 int bLastGhostX = 0;
 int bLastGhostY = 0;
 
@@ -61,6 +61,7 @@ LOCATION varBGhost = LOCATION::EMPTY;
 DIRECTION rGhostDir = DIRECTION::DOWN;
 DIRECTION oGhostDir = DIRECTION::LEFT;
 DIRECTION pGhostDir = DIRECTION::LEFT;
+DIRECTION bGhostDir = DIRECTION::LEFT;
 
 bool checkPermission(int texture, vector<LOCATION> arr) {
     for (int i = 0; i < arr.size(); ++i) { 
@@ -294,6 +295,21 @@ void pinkGhostMove(DIRECTION &dir) {
     }
 }
 
+void blueGhostMove() {
+    int targetX = 2 * pacmanX - rGhostX;
+    int targetY = 2 * pacmanY - rGhostY;
+    ghostMove(bGhostX, bGhostY, bLastGhostX, bLastGhostY, targetX, targetY, bGhostDir, varBGhost, LOCATION::BLUEGHOST, ghostRegular);
+}
+
+void orangeGhostMove() {
+    if ((oGhostX - pacmanX) * (oGhostX - pacmanX) + (oGhostY - pacmanY) * (oGhostY - pacmanY) >= 49) {
+        ghostMove(oGhostX, oGhostY, oLastGhostX, oLastGhostY, pacmanX, pacmanY, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+    }
+    else {
+        ghostMove(oGhostX, oGhostY, oLastGhostX, oLastGhostY, 0, 31, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+    }
+}
+
 int main() {
     //set location
     loadMapFromFile("map.txt");
@@ -318,6 +334,8 @@ int main() {
         //ghosts move logic
         redGhostMove();
         pinkGhostMove(dir);
+        blueGhostMove();
+        orangeGhostMove();
         //ouput
         cout << "Score: " << score << "\n";
         cout << isPacmanCaught << "\n";
