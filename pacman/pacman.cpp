@@ -11,6 +11,7 @@ using namespace std;
 
 const int width = 28;
 const int height = 31;
+int timer = 0;
 
 array<array<int, width>, height> map;
 
@@ -25,23 +26,19 @@ int pacmanBlock = 4;
 
 int rGhostX = 13;
 int rGhostY = 11;
-int rLastGhostX = 0;
-int rLastGhostY = 0;
+bool redGhostTimeOut = false;
 
 int oGhostX = 18;//14;  
 int oGhostY = 17;//14;
-int oLastGhostX = 0;
-int oLastGhostY = 0;
+bool orangeGhostTimeOut = false;
 
 int bGhostX = 9;//12;
 int bGhostY = 11;//14;
-int bLastGhostX = 0;
-int bLastGhostY = 0;
+bool blueGhostTimeOut = false;
 
 int pGhostX = 18;//13;
 int pGhostY = 11;//14;
-int pLastGhostX = 0;
-int pLastGhostY = 0;
+bool pinkGhostTimeOut = false;
 
 char coinIcon = (char)249u;
 char ghostIcon = (char)253u;
@@ -50,7 +47,7 @@ enum DIRECTION {UP, DOWN, RIGHT, LEFT, ELSE};
 enum LOCATION {LEFTPORT, RIGHTPORT, EMPTY, COIN, SUPERCOIN, PACMAN, WALL, REDGHOST, ORANGEGHOST, BLUEGHOST, PINKGHOST, DOOR};
 
 vector<LOCATION> pacmanRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN};
-vector<LOCATION> ghostRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::PACMAN};
+vector<LOCATION> ghostRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::PACMAN, LOCATION::REDGHOST, LOCATION::ORANGEGHOST, LOCATION::BLUEGHOST, LOCATION::PINKGHOST };
 vector<LOCATION> neutralObjects = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN};
 vector<LOCATION> ghostsList = { LOCATION::REDGHOST, LOCATION::ORANGEGHOST, LOCATION::BLUEGHOST, LOCATION::PINKGHOST };
 
@@ -105,6 +102,7 @@ void loadMapFromFile(string mapPath) {
                 else if (elem == '$') map[i][j] = LOCATION::LEFTPORT;
                 else if (elem == '%') map[i][j] = LOCATION::RIGHTPORT;
                 else if (elem == '=') map[i][j] = LOCATION::DOOR;
+                else if (elem == '*') map[i][j] = LOCATION::SUPERCOIN;
                 else map[i][j] = LOCATION::WALL;
             }
         }
@@ -129,6 +127,9 @@ void show() {
                 break;
             case LOCATION::COIN:
                 cout << termcolor::yellow << coinIcon << termcolor::reset;
+                break;
+            case LOCATION::SUPERCOIN:
+                cout << termcolor::yellow << "*" << termcolor::reset;
                 break;
             case LOCATION::PACMAN:
                 cout << termcolor::bright_yellow << pacmanIcon << termcolor::reset;
@@ -181,6 +182,10 @@ bool pacmanMove(DIRECTION dir, vector<LOCATION> textureArr) {
     else return false;
     if (move) {
         if (map[pacmanY][pacmanX] == LOCATION::COIN) score += 10;
+        if (map[pacmanY][pacmanX] == LOCATION::SUPERCOIN) {
+            score += 100;
+            hideSeek = true;
+        }
         if (map[pacmanY][pacmanX] == LOCATION::LEFTPORT) pacmanX = 26;
         else if (map[pacmanY][pacmanX] == LOCATION::RIGHTPORT) pacmanX = 1;
         map[pacmanY][pacmanX] = LOCATION::PACMAN;
@@ -194,20 +199,7 @@ double distanceFromDot(int curX, int curY, int targetX, int targetY) {
     return sqrt(vectorX * vectorX + vectorY * vectorY);
 }
 
-bool checkGhostCollision(int& ghostX, int& ghostY, int& ghostLastX, int& ghostLastY) {
-    if (checkPermission(map[ghostY][ghostX], neutralObjects)) return false;
-    else if (checkPermission(map[ghostY][ghostX], ghostsList)) {
-        cout << "ghost collision\n";
-        ghostX = ghostLastX;
-        ghostY = ghostLastY;
-        return true;
-    } else {
-        isPacmanCaught = true;
-        return true;
-    }
-}
-
-void ghostMove(int& ghostX, int& ghostY, int& lastGhostX, int lastGhostY, int targetX, int targetY, DIRECTION& ghostDir, LOCATION& varGhost, LOCATION ghostType, vector<LOCATION> &permissionList) {
+void ghostMove(int& ghostX, int& ghostY, int targetX, int targetY, DIRECTION& ghostDir, LOCATION& varGhost, LOCATION ghostType, vector<LOCATION> &permissionList) {
     int minX = ghostX;
     int minY = ghostY;
     DIRECTION localeDir = ghostDir;
@@ -248,65 +240,103 @@ void ghostMove(int& ghostX, int& ghostY, int& lastGhostX, int lastGhostY, int ta
             localeDir = DIRECTION::LEFT;
         }
     }
-    lastGhostX = ghostX;
-    lastGhostY = ghostY;
     ghostDir = localeDir;
-    map[ghostY][ghostX] = varGhost;
     //procesing teleports
     if (map[minY][minX] == LOCATION::LEFTPORT) minX = 26;
     else if (map[minY][minX] == LOCATION::RIGHTPORT) minX = 1;
     //check collision
-    if (!checkGhostCollision(minX, minY, ghostX, ghostY)) {
+    if (checkPermission(map[minY][minX], ghostsList)) {
+        switch ((LOCATION)map[minY][minX]) {
+        case LOCATION::REDGHOST:
+            map[rGhostY][rGhostX] = varRGhost;
+            rGhostX = ghostX;
+            rGhostY = ghostY;
+            map[rGhostY][rGhostX] = LOCATION::REDGHOST;
+            redGhostTimeOut = true;
+            break;
+        case LOCATION::BLUEGHOST:
+            map[bGhostY][bGhostX] = varBGhost;
+            bGhostX = ghostX;
+            bGhostY = ghostY;
+            map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
+            blueGhostTimeOut = true;
+            break;
+        case LOCATION::PINKGHOST:
+            map[pGhostY][pGhostX] = varPGhost;
+            pGhostX = ghostX;
+            pGhostY = ghostY;
+            map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
+            pinkGhostTimeOut = true;
+            break;
+        case LOCATION::ORANGEGHOST:
+            map[oGhostY][oGhostX] = varOGhost;
+            oGhostX = ghostX;
+            oGhostY = ghostY;
+            map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
+            orangeGhostTimeOut = true;
+            break;
+        }
         varGhost = (LOCATION)map[minY][minX];
         map[minY][minX] = ghostType;
         ghostX = minX;
         ghostY = minY;
     }
+    else if ((LOCATION)map[minY][minX] == LOCATION::PACMAN) {
+        isPacmanCaught = true;
+    }
+    else {
+        map[ghostY][ghostX] = varGhost;
+        varGhost = (LOCATION)map[minY][minX];
+        map[minY][minX] = ghostType;
+        ghostX = minX;
+        ghostY = minY;
+    }
+
 }
 
 void redGhostMove() {
-    ghostMove(rGhostX, rGhostY, rLastGhostX, rLastGhostY, pacmanX, pacmanY, rGhostDir, varRGhost, LOCATION::REDGHOST, ghostRegular);
+    ghostMove(rGhostX, rGhostY, pacmanX, pacmanY, rGhostDir, varRGhost, LOCATION::REDGHOST, ghostRegular);
 }
 
 void pinkGhostMove(DIRECTION &dir) {
     if (dir == DIRECTION::RIGHT) {
         if (pacmanX + 3 < width && checkPermission(map[pacmanY][pacmanX + 3], ghostRegular)) {
-            ghostMove(pGhostX, pGhostY, pLastGhostX, pLastGhostY, pacmanX + 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+            ghostMove(pGhostX, pGhostY, pacmanX + 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
         }
-        else ghostMove(pGhostX, pGhostY, pLastGhostX, pLastGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+        else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
     }
     else if (dir == DIRECTION::LEFT) {
         if (pacmanX - 3 > 0 && checkPermission(map[pacmanY][pacmanX - 3], ghostRegular)) {
-            ghostMove(pGhostX, pGhostY, pLastGhostX, pLastGhostY, pacmanX - 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+            ghostMove(pGhostX, pGhostY, pacmanX - 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
         }
-        else ghostMove(pGhostX, pGhostY, pLastGhostX, pLastGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+        else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
     }
     else if (dir == DIRECTION::DOWN) {
         if (pacmanY + 3 < height && checkPermission(map[pacmanY + 3][pacmanX], ghostRegular)) {
-            ghostMove(pGhostX, pGhostY, pLastGhostX, pLastGhostY, pacmanX, pacmanY + 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+            ghostMove(pGhostX, pGhostY, pacmanX, pacmanY + 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
         }
-        else ghostMove(pGhostX, pGhostY, pLastGhostX, pLastGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+        else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
     }
     else {//Pink ghost UP
         if (pacmanX - 2 > 0 && pacmanY - 3 > 0 && checkPermission(map[pacmanY - 2][pacmanX - 3], ghostRegular)) {
-            ghostMove(pGhostX, pGhostY, pLastGhostX, pLastGhostY, pacmanX - 2, pacmanY - 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+            ghostMove(pGhostX, pGhostY, pacmanX - 2, pacmanY - 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
         }
-        else ghostMove(pGhostX, pGhostY, pLastGhostX, pLastGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+        else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
     }
 }
 
 void blueGhostMove() {
     int targetX = 2 * pacmanX - rGhostX;
     int targetY = 2 * pacmanY - rGhostY;
-    ghostMove(bGhostX, bGhostY, bLastGhostX, bLastGhostY, targetX, targetY, bGhostDir, varBGhost, LOCATION::BLUEGHOST, ghostRegular);
+    ghostMove(bGhostX, bGhostY, targetX, targetY, bGhostDir, varBGhost, LOCATION::BLUEGHOST, ghostRegular);
 }
 
 void orangeGhostMove() {
     if ((oGhostX - pacmanX) * (oGhostX - pacmanX) + (oGhostY - pacmanY) * (oGhostY - pacmanY) >= 49) {
-        ghostMove(oGhostX, oGhostY, oLastGhostX, oLastGhostY, pacmanX, pacmanY, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+        ghostMove(oGhostX, oGhostY, pacmanX, pacmanY, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
     }
     else {
-        ghostMove(oGhostX, oGhostY, oLastGhostX, oLastGhostY, 0, 31, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+        ghostMove(oGhostX, oGhostY, 0, 31, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
     }
 }
 
@@ -325,6 +355,7 @@ int main() {
     while (!(GetAsyncKeyState(VK_RETURN) & 0x8000)){}//wait enter 
     while (1) {
         show();
+        //Sleep(100);
         //set direction and pacman move
         curDir = keyHandler();
         if (dir != curDir && curDir != DIRECTION::ELSE) {
@@ -332,13 +363,18 @@ int main() {
             else dir = curDir;
         } else pacmanMove(dir, pacmanRegular);
         //ghosts move logic
-        redGhostMove();
-        pinkGhostMove(dir);
-        blueGhostMove();
-        orangeGhostMove();
+        if (!redGhostTimeOut) redGhostMove();
+        if (!pinkGhostTimeOut) pinkGhostMove(dir);
+        if (!blueGhostTimeOut) blueGhostMove();
+        if (!orangeGhostTimeOut) orangeGhostMove();
+        if (redGhostTimeOut) redGhostTimeOut = false;
+        if (pinkGhostTimeOut) pinkGhostTimeOut = false;
+        if (blueGhostTimeOut) blueGhostTimeOut = false;
+        if (orangeGhostTimeOut) orangeGhostTimeOut = false;
+
         //ouput
         cout << "Score: " << score << "\n";
-        cout << isPacmanCaught << "\n";
+        //cout << isPacmanCaught << "\n";
     }
     return 0;
 }
