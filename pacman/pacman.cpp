@@ -28,16 +28,19 @@ int rGhostX = 13;
 int rGhostY = 11;
 bool redGhostTimeOut = false;
 
-int oGhostX = 18;//14;  
-int oGhostY = 17;//14;
+int oGhostX = 14;  
+int oGhostY = 14;
+bool oStarted = false;
 bool orangeGhostTimeOut = false;
 
-int bGhostX = 9;//12;
-int bGhostY = 11;//14;
+int bGhostX = 12;
+int bGhostY = 14;
+bool bStarted = false;
 bool blueGhostTimeOut = false;
 
-int pGhostX = 18;//13;
-int pGhostY = 11;//14;
+int pGhostX = 13;
+int pGhostY = 14;
+bool pStarted = false;
 bool pinkGhostTimeOut = false;
 
 char coinIcon = (char)249u;
@@ -50,6 +53,22 @@ vector<LOCATION> pacmanRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCAT
 vector<LOCATION> ghostRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::PACMAN, LOCATION::REDGHOST, LOCATION::ORANGEGHOST, LOCATION::BLUEGHOST, LOCATION::PINKGHOST };
 vector<LOCATION> neutralObjects = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN};
 vector<LOCATION> ghostsList = { LOCATION::REDGHOST, LOCATION::ORANGEGHOST, LOCATION::BLUEGHOST, LOCATION::PINKGHOST };
+vector<vector<int>> startPinkPath = {
+    vector<int>{13, 13},
+    vector<int>{12, 13},
+    vector<int>{11, 13}
+};
+vector<vector<int>> startBluePath = {
+    vector<int>{13, 11},
+    vector<int>{13, 13},
+    vector<int>{12, 13},
+    vector<int>{11, 13},
+};
+vector<vector<int>> startOrangePath = {
+    vector<int>{13, 14},
+    vector<int>{12, 14},
+    vector<int>{11, 14}
+};
 
 LOCATION varRGhost = LOCATION::COIN;
 LOCATION varOGhost = LOCATION::EMPTY;
@@ -350,6 +369,7 @@ int main() {
     map[rGhostY][rGhostX] = LOCATION::REDGHOST;
     DIRECTION dir, curDir;
     dir = DIRECTION::LEFT;
+    int stepCounter = 0;
 
     cout << "Press Enter\n";
     while (!(GetAsyncKeyState(VK_RETURN) & 0x8000)){}//wait enter 
@@ -364,9 +384,50 @@ int main() {
         } else pacmanMove(dir, pacmanRegular);
         //ghosts move logic
         if (!redGhostTimeOut) redGhostMove();
-        if (!pinkGhostTimeOut) pinkGhostMove(dir);
-        if (!blueGhostTimeOut) blueGhostMove();
-        if (!orangeGhostTimeOut) orangeGhostMove();
+        if (!pinkGhostTimeOut && timer >= 1) { 
+            if (!pStarted) {
+                map[pGhostY][pGhostX] = varPGhost;
+                varPGhost = (LOCATION)map[startPinkPath[stepCounter][0]][startPinkPath[stepCounter][1]];
+                pGhostY = startPinkPath[stepCounter][0];
+                pGhostX = startPinkPath[stepCounter][1];
+                map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
+                if (stepCounter == startPinkPath.size()-1) {
+                    pStarted = true;
+                    stepCounter = 0;
+                }
+                ++stepCounter;
+            } else pinkGhostMove(dir);
+        }
+        if (!blueGhostTimeOut && timer >= 20) {
+            if (!bStarted) {
+                map[bGhostY][bGhostX] = varBGhost;
+                varBGhost = (LOCATION)map[startBluePath[stepCounter][0]][startBluePath[stepCounter][1]];
+                bGhostY = startBluePath[stepCounter][0];
+                bGhostX = startBluePath[stepCounter][1];
+                map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
+                if (stepCounter == startBluePath.size() - 1) {
+                    bStarted = true;
+                    stepCounter = 0;
+                }
+                ++stepCounter;
+            }
+            else blueGhostMove();
+        }
+        if (!orangeGhostTimeOut && timer >= 30) {
+            if (!oStarted) {
+                map[oGhostY][oGhostX] = varOGhost;
+                varOGhost = (LOCATION)map[startOrangePath[stepCounter][0]][startOrangePath[stepCounter][1]];
+                oGhostY = startOrangePath[stepCounter][0];
+                oGhostX = startOrangePath[stepCounter][1];
+                map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
+                if (stepCounter == startOrangePath.size() - 1) {
+                    oStarted = true;
+                    stepCounter = 0;
+                }
+                ++stepCounter;
+            }
+            else orangeGhostMove();
+        }
         if (redGhostTimeOut) redGhostTimeOut = false;
         if (pinkGhostTimeOut) pinkGhostTimeOut = false;
         if (blueGhostTimeOut) blueGhostTimeOut = false;
@@ -374,7 +435,7 @@ int main() {
 
         //ouput
         cout << "Score: " << score << "\n";
-        //cout << isPacmanCaught << "\n";
+        ++timer;
     }
     return 0;
 }
