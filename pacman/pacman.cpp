@@ -13,6 +13,7 @@ const int width = 28;
 const int height = 31;
 int timer = 0;
 int lifes = 3;
+string nickname;
 
 array<array<int, width>, height> map;
 
@@ -51,9 +52,7 @@ char ghostIcon = (char)253u;
 enum DIRECTION {UP, DOWN, RIGHT, LEFT, ELSE};
 enum LOCATION {LEFTPORT, RIGHTPORT, EMPTY, COIN, SUPERCOIN, PACMAN, WALL, REDGHOST, ORANGEGHOST, BLUEGHOST, PINKGHOST, DOOR};
 
-vector<LOCATION> pacmanRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN};
-vector<LOCATION> ghostRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::PACMAN, LOCATION::REDGHOST, LOCATION::ORANGEGHOST, LOCATION::BLUEGHOST, LOCATION::PINKGHOST };
-vector<LOCATION> neutralObjects = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN};
+vector<LOCATION> mobRegular = {LOCATION::LEFTPORT, LOCATION::RIGHTPORT, LOCATION::EMPTY, LOCATION::COIN, LOCATION::SUPERCOIN, LOCATION::PACMAN, LOCATION::REDGHOST, LOCATION::ORANGEGHOST, LOCATION::BLUEGHOST, LOCATION::PINKGHOST };
 vector<LOCATION> ghostsList = { LOCATION::REDGHOST, LOCATION::ORANGEGHOST, LOCATION::BLUEGHOST, LOCATION::PINKGHOST };
 vector<vector<int>> startPinkPath = {
     vector<int>{13, 13},
@@ -88,6 +87,18 @@ bool checkPermission(int texture, vector<LOCATION> arr) {
     return false;
 }
 
+int coinsCounter() {
+    int count = 0;
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            if (map[i][j] == LOCATION::COIN || map[i][j] == LOCATION::SUPERCOIN) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
 void updateScreen() {
     BOOL WINAPI WriteConsoleOutput(
         _In_     HANDLE hConsoleOutput,
@@ -119,11 +130,11 @@ void loadMapFromFile(string mapPath) {
             for (int j = 0; j < 28; ++j) {
                 char elem = buffer[j];
                 if (elem == '.') map[i][j] = LOCATION::COIN;
+                else if (elem == '*') map[i][j] = LOCATION::SUPERCOIN;
                 else if (elem == '0') map[i][j] = LOCATION::EMPTY;
                 else if (elem == '$') map[i][j] = LOCATION::LEFTPORT;
                 else if (elem == '%') map[i][j] = LOCATION::RIGHTPORT;
                 else if (elem == '=') map[i][j] = LOCATION::DOOR;
-                else if (elem == '*') map[i][j] = LOCATION::SUPERCOIN;
                 else map[i][j] = LOCATION::WALL;
             }
         }
@@ -242,40 +253,51 @@ DIRECTION keyHandler() {
     else return DIRECTION::ELSE;
 }
 
-//void start() {
-//    map[pacmanY][pacmanX] = LOCATION::PACMAN;
-//    map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
-//    map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
-//    map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
-//    map[rGhostY][rGhostX] = LOCATION::REDGHOST;
-//
-//    hideSeekTime = 0;
-//    hideSeek = false;
-//    isPacmanCaught = false;
-//
-//    pacmanX = 13;
-//    pacmanY = 23;
-//    pacmanBlock = 4;
-//
-//    rGhostX = 13;
-//    rGhostY = 11;
-//    redGhostTimeOut = false;
-//
-//    oGhostX = 14;
-//    oGhostY = 14;
-//    oStarted = false;
-//    orangeGhostTimeOut = false;
-//
-//    bGhostX = 12;
-//    bGhostY = 14;
-//    bStarted = false;
-//    blueGhostTimeOut = false;
-//
-//    pGhostX = 13;
-//    pGhostY = 14;
-//    pStarted = false;
-//    pinkGhostTimeOut = false;
-//}
+void restart() {
+    map[bGhostY][bGhostX] = varBGhost;
+    map[oGhostY][oGhostX] = varOGhost;
+    map[pGhostY][pGhostX] = varPGhost;
+    map[rGhostY][rGhostX] = varRGhost;
+
+    map[pacmanY][pacmanX] = LOCATION::EMPTY;
+
+    hideSeekTime = 0;
+    hideSeek = false;
+    isPacmanCaught = false;
+
+    pacmanX = 13;
+    pacmanY = 23;
+    pacmanBlock = 4;
+
+    rGhostX = 13;
+    rGhostY = 11;
+    redGhostTimeOut = false;
+
+    oGhostX = 14;
+    oGhostY = 14;
+    oStarted = false;
+    orangeGhostTimeOut = false;
+
+    bGhostX = 12;
+    bGhostY = 14;
+    bStarted = false;
+    blueGhostTimeOut = false;
+
+    pGhostX = 13;
+    pGhostY = 14;
+    pStarted = false;
+    pinkGhostTimeOut = false;
+    varRGhost = (LOCATION)map[rGhostY][rGhostX];
+    varOGhost = (LOCATION)map[oGhostY][oGhostX];
+    varPGhost = (LOCATION)map[pGhostY][pGhostX];
+    varBGhost = (LOCATION)map[bGhostY][bGhostX];
+    map[pacmanY][pacmanX] = LOCATION::PACMAN;
+    map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
+    map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
+    map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
+    map[rGhostY][rGhostX] = LOCATION::REDGHOST;
+    timer = 0;
+}
 
 void ghostToCage(LOCATION ghost) {
     switch (ghost) {
@@ -320,25 +342,37 @@ bool pacmanMove(DIRECTION dir, vector<LOCATION> textureArr) {
         map[pacmanY][pacmanX] = LOCATION::EMPTY;
         --pacmanY;
         move = true;
-    } else if (dir == DIRECTION::DOWN && pacmanY + 1 < height && checkPermission(map[pacmanY + 1][pacmanX], textureArr)) {
+    } 
+    else if (dir == DIRECTION::DOWN && pacmanY + 1 < height && checkPermission(map[pacmanY + 1][pacmanX], textureArr)) {
         map[pacmanY][pacmanX] = LOCATION::EMPTY;
         ++pacmanY;
         move = true;
-    } else if (dir == DIRECTION::RIGHT && pacmanX + 1 < 28 && checkPermission(map[pacmanY][pacmanX + 1], textureArr)) {
+    } 
+    else if (dir == DIRECTION::RIGHT && pacmanX + 1 < 28 && checkPermission(map[pacmanY][pacmanX + 1], textureArr)) {
         map[pacmanY][pacmanX] = LOCATION::EMPTY;
         ++pacmanX;
         move = true;
-    } else if (dir == DIRECTION::LEFT && pacmanX - 1 >= 0 && checkPermission(map[pacmanY][pacmanX - 1], textureArr)) {
+    } 
+    else if (dir == DIRECTION::LEFT && pacmanX - 1 >= 0 && checkPermission(map[pacmanY][pacmanX - 1], textureArr)) {
         map[pacmanY][pacmanX] = LOCATION::EMPTY;
         --pacmanX;
         move = true;
     }
     else return false;
     if (move) {
-        if (map[pacmanY][pacmanX] == LOCATION::COIN) score += 10;
+        if (map[pacmanY][pacmanX] == LOCATION::COIN) { 
+            score += 10;
+        }
         if (checkPermission(map[pacmanY][pacmanX], ghostsList) && hideSeek) {
             score += 200;
             ghostToCage((LOCATION)map[pacmanY][pacmanX]);
+        }
+        if (checkPermission(map[pacmanY][pacmanX], ghostsList) && !hideSeek) {
+            isPacmanCaught = true;
+            --lifes;
+            restart();
+            show();
+            Sleep(3000);
         }
         if (map[pacmanY][pacmanX] == LOCATION::SUPERCOIN) {
             score += 100;
@@ -443,9 +477,9 @@ void ghostMove(int& ghostX, int& ghostY, int targetX, int targetY, DIRECTION& gh
     else if ((LOCATION)map[minY][minX] == LOCATION::PACMAN) {
         isPacmanCaught = true;
         --lifes;
-        //start();
-        //show();
-        //Sleep(3000);
+        restart();
+        show();
+        Sleep(3000);
     }
     else {
         map[ghostY][ghostX] = varGhost;
@@ -459,42 +493,42 @@ void ghostMove(int& ghostX, int& ghostY, int targetX, int targetY, DIRECTION& gh
 
 void redGhostMove() {
     if (hideSeek && timer <= hideSeekTime) {
-        if (timer % 3 == 0) ghostMove(rGhostX, rGhostY, width, height, rGhostDir, varRGhost, LOCATION::REDGHOST, ghostRegular);
+        if (timer % 3 == 0) ghostMove(rGhostX, rGhostY, width, height, rGhostDir, varRGhost, LOCATION::REDGHOST, mobRegular);
     }
     else {
-        if (timer % 2 == 0) ghostMove(rGhostX, rGhostY, pacmanX, pacmanY, rGhostDir, varRGhost, LOCATION::REDGHOST, ghostRegular);
+        if (timer % 2 == 0) ghostMove(rGhostX, rGhostY, pacmanX, pacmanY, rGhostDir, varRGhost, LOCATION::REDGHOST, mobRegular);
     }
 }
 
 void pinkGhostMove(DIRECTION &dir) {
     if (hideSeek && timer <= hideSeekTime) {
-        if (timer % 3 == 0) ghostMove(pGhostX, pGhostY, 0, 0, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+        if (timer % 3 == 0) ghostMove(pGhostX, pGhostY, 0, 0, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
     }
     else {
         if (timer % 2 == 0) {
             if (dir == DIRECTION::RIGHT) {
-                if (pacmanX + 3 < width && checkPermission(map[pacmanY][pacmanX + 3], ghostRegular)) {
-                    ghostMove(pGhostX, pGhostY, pacmanX + 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                if (pacmanX + 3 < width && checkPermission(map[pacmanY][pacmanX + 3], mobRegular)) {
+                    ghostMove(pGhostX, pGhostY, pacmanX + 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
                 }
-                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
             }
             else if (dir == DIRECTION::LEFT) {
-                if (pacmanX - 3 > 0 && checkPermission(map[pacmanY][pacmanX - 3], ghostRegular)) {
-                    ghostMove(pGhostX, pGhostY, pacmanX - 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                if (pacmanX - 3 > 0 && checkPermission(map[pacmanY][pacmanX - 3], mobRegular)) {
+                    ghostMove(pGhostX, pGhostY, pacmanX - 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
                 }
-                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
             }
             else if (dir == DIRECTION::DOWN) {
-                if (pacmanY + 3 < height && checkPermission(map[pacmanY + 3][pacmanX], ghostRegular)) {
-                    ghostMove(pGhostX, pGhostY, pacmanX, pacmanY + 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                if (pacmanY + 3 < height && checkPermission(map[pacmanY + 3][pacmanX], mobRegular)) {
+                    ghostMove(pGhostX, pGhostY, pacmanX, pacmanY + 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
                 }
-                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
             }
             else {//Pink ghost UP
-                if (pacmanX - 2 > 0 && pacmanY - 3 > 0 && checkPermission(map[pacmanY - 2][pacmanX - 3], ghostRegular)) {
-                    ghostMove(pGhostX, pGhostY, pacmanX - 2, pacmanY - 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                if (pacmanX - 2 > 0 && pacmanY - 3 > 0 && checkPermission(map[pacmanY - 2][pacmanX - 3], mobRegular)) {
+                    ghostMove(pGhostX, pGhostY, pacmanX - 2, pacmanY - 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
                 }
-                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, mobRegular);
             }
         }
     }
@@ -502,13 +536,13 @@ void pinkGhostMove(DIRECTION &dir) {
 
 void blueGhostMove() {
     if (hideSeek && timer <= hideSeekTime) {
-        if (timer % 3 == 0) ghostMove(bGhostX, bGhostY, 0, width, bGhostDir, varBGhost, LOCATION::BLUEGHOST, ghostRegular);
+        if (timer % 3 == 0) ghostMove(bGhostX, bGhostY, 0, width, bGhostDir, varBGhost, LOCATION::BLUEGHOST, mobRegular);
     }
     else {
         if (timer % 2 == 0) {
             int targetX = 2 * pacmanX - rGhostX;
             int targetY = 2 * pacmanY - rGhostY;
-            ghostMove(bGhostX, bGhostY, targetX, targetY, bGhostDir, varBGhost, LOCATION::BLUEGHOST, ghostRegular);
+            ghostMove(bGhostX, bGhostY, targetX, targetY, bGhostDir, varBGhost, LOCATION::BLUEGHOST, mobRegular);
         }
     }
     
@@ -516,48 +550,24 @@ void blueGhostMove() {
 
 void orangeGhostMove() {
     if (hideSeek && timer <= hideSeekTime) {
-        if (timer % 3 == 0) ghostMove(oGhostX, oGhostY, 0, height, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+        if (timer % 3 == 0) ghostMove(oGhostX, oGhostY, 0, height, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, mobRegular);
     }
     else {
         if (timer % 2 == 0) {
             if ((oGhostX - pacmanX) * (oGhostX - pacmanX) + (oGhostY - pacmanY) * (oGhostY - pacmanY) >= 49) {
-                ghostMove(oGhostX, oGhostY, pacmanX, pacmanY, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+                ghostMove(oGhostX, oGhostY, pacmanX, pacmanY, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, mobRegular);
             }
             else {
-                ghostMove(oGhostX, oGhostY, 0, 31, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+                ghostMove(oGhostX, oGhostY, 0, 31, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, mobRegular);
             }
         }
     }
     
 }
 
-int main() {
-    //set location
-    loadMapFromFile("map.txt");
-    map[pacmanY][pacmanX] = LOCATION::PACMAN;
-    map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
-    map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
-    map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
-    map[rGhostY][rGhostX] = LOCATION::REDGHOST;
-    DIRECTION dir, curDir;
-    dir = DIRECTION::LEFT;
-    int stepCounter = 0;
-
-    cout << "Press Enter\n";
-    while (!(GetAsyncKeyState(VK_RETURN) & 0x8000)){}//wait enter 
-    while (1) {
-        if (timer == hideSeekTime) hideSeek = false;
-        show();
-        //Sleep(100);
-        //set direction and pacman move
-        curDir = keyHandler();
-        if (dir != curDir && curDir != DIRECTION::ELSE) {
-            if (!pacmanMove(curDir, ghostRegular)) pacmanMove(dir, ghostRegular);
-            else dir = curDir;
-        } else pacmanMove(dir, ghostRegular);
-        //ghosts move logic
-        if (!redGhostTimeOut) redGhostMove();
-        if (!pinkGhostTimeOut && timer >= 1) { 
+void ghostLogic(int &stepCounter, DIRECTION &dir) {
+    if (!redGhostTimeOut) redGhostMove();
+        if (!pinkGhostTimeOut && timer >= 5) { 
             if (!pStarted) {
                 map[pGhostY][pGhostX] = varPGhost;
                 varPGhost = (LOCATION)map[startPinkPath[stepCounter][0]][startPinkPath[stepCounter][1]];
@@ -605,11 +615,54 @@ int main() {
         if (pinkGhostTimeOut) pinkGhostTimeOut = false;
         if (blueGhostTimeOut) blueGhostTimeOut = false;
         if (orangeGhostTimeOut) orangeGhostTimeOut = false;
+}
 
-        //ouput
-        cout << "Score: " << score << "\n";
-        cout << "lifes: " << lifes << "\n";
-        ++timer;
+int main() {
+    cout << "enter nickname: ";
+    cin >> nickname;
+    while (1) {
+        //set location
+        loadMapFromFile("map.txt");
+        map[pacmanY][pacmanX] = LOCATION::PACMAN;
+        map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
+        map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
+        map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
+        map[rGhostY][rGhostX] = LOCATION::REDGHOST;
+        restart();
+        DIRECTION dir, curDir;
+        dir = DIRECTION::LEFT;
+        int stepCounter = 0;//for go out of cage logic
+        show();
+        Sleep(3000);
+        while (1) {
+            //gameover
+            if (timer == hideSeekTime) hideSeek = false;
+            if (coinsCounter() == 0) break;
+            show();
+            //Sleep(100);
+            //set direction and pacman move
+            curDir = keyHandler();
+            if (dir != curDir && curDir != DIRECTION::ELSE) {
+                if (!pacmanMove(curDir, mobRegular)) pacmanMove(dir, mobRegular);
+                else dir = curDir;
+            }
+            else pacmanMove(dir, mobRegular);
+            //ghosts move logic
+            ghostLogic(stepCounter, dir);
+            if (lifes == 0) {
+                updateScreen();
+                string str = nickname + "\nscore: " + to_string(score);
+                cout << str << "\n";
+                ofstream file("results.txt");
+                file << str;
+                file.close();
+                return 0;
+            }
+            //ouput
+            cout << "Score: " << score << "\n";
+            cout << "lifes: " << lifes << "\n";
+            ++timer;
+        }
     }
     return 0;
 }
