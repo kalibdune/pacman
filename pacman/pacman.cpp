@@ -12,10 +12,12 @@ using namespace std;
 const int width = 28;
 const int height = 31;
 int timer = 0;
+int lifes = 3;
 
 array<array<int, width>, height> map;
 
 int score = 0;
+int hideSeekTime = 0;
 bool hideSeek = false;
 bool isPacmanCaught = false;
 
@@ -134,37 +136,98 @@ void show() {
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < 28; ++j) {
             hidecursor();
-            switch (map[i][j]) {
-            case LOCATION::DOOR:
-            case LOCATION::LEFTPORT:
-            case LOCATION::RIGHTPORT:
-            case LOCATION::EMPTY:
-                cout << " ";
-                break;
-            case LOCATION::WALL:
-                cout << termcolor::on_blue << "#" << termcolor::reset;
-                break;
-            case LOCATION::COIN:
-                cout << termcolor::yellow << coinIcon << termcolor::reset;
-                break;
-            case LOCATION::SUPERCOIN:
-                cout << termcolor::yellow << "*" << termcolor::reset;
-                break;
-            case LOCATION::PACMAN:
-                cout << termcolor::bright_yellow << pacmanIcon << termcolor::reset;
-                break;
-            case LOCATION::REDGHOST:
-                cout << termcolor::red << ghostIcon << termcolor::reset;
-                break;
-            case LOCATION::ORANGEGHOST:
-                cout << termcolor::yellow << ghostIcon << termcolor::reset;
-                break;
-            case LOCATION::PINKGHOST:
-                cout << termcolor::magenta << ghostIcon << termcolor::reset;
-                break;
-            case LOCATION::BLUEGHOST:
-                cout << termcolor::blue << ghostIcon << termcolor::reset;
-                break;
+            if (hideSeek) {
+                if (timer % 2 == 0) {
+                    switch (map[i][j]) {
+                    case LOCATION::DOOR:
+                    case LOCATION::LEFTPORT:
+                    case LOCATION::RIGHTPORT:
+                    case LOCATION::EMPTY:
+                        cout << " ";
+                        break;
+                    case LOCATION::WALL:
+                        cout << termcolor::on_blue << "#" << termcolor::reset;
+                        break;
+                    case LOCATION::COIN:
+                        cout << termcolor::yellow << coinIcon << termcolor::reset;
+                        break;
+                    case LOCATION::SUPERCOIN:
+                        cout << termcolor::yellow << "*" << termcolor::reset;
+                        break;
+                    case LOCATION::PACMAN:
+                        cout << termcolor::bright_yellow << pacmanIcon << termcolor::reset;
+                        break;
+                    case LOCATION::REDGHOST:
+                    case LOCATION::ORANGEGHOST:
+                    case LOCATION::PINKGHOST:
+                    case LOCATION::BLUEGHOST:
+                        cout << termcolor::blue << ghostIcon << termcolor::reset;
+                        break;
+                    }
+                }
+                else {
+                    switch (map[i][j]) {
+                    case LOCATION::DOOR:
+                    case LOCATION::LEFTPORT:
+                    case LOCATION::RIGHTPORT:
+                    case LOCATION::EMPTY:
+                        cout << " ";
+                        break;
+                    case LOCATION::WALL:
+                        cout << termcolor::on_blue << "#" << termcolor::reset;
+                        break;
+                    case LOCATION::COIN:
+                        cout << termcolor::yellow << coinIcon << termcolor::reset;
+                        break;
+                    case LOCATION::SUPERCOIN:
+                        cout << termcolor::yellow << "*" << termcolor::reset;
+                        break;
+                    case LOCATION::PACMAN:
+                        cout << termcolor::bright_yellow << pacmanIcon << termcolor::reset;
+                        break;
+                    case LOCATION::REDGHOST:
+                    case LOCATION::ORANGEGHOST:
+                    case LOCATION::PINKGHOST:
+                    case LOCATION::BLUEGHOST:
+                        cout << termcolor::white << ghostIcon << termcolor::reset;
+                        break;
+                    }
+                }
+                
+            }
+            else {
+                switch (map[i][j]) {
+                case LOCATION::DOOR:
+                case LOCATION::LEFTPORT:
+                case LOCATION::RIGHTPORT:
+                case LOCATION::EMPTY:
+                    cout << " ";
+                    break;
+                case LOCATION::WALL:
+                    cout << termcolor::on_blue << "#" << termcolor::reset;
+                    break;
+                case LOCATION::COIN:
+                    cout << termcolor::yellow << coinIcon << termcolor::reset;
+                    break;
+                case LOCATION::SUPERCOIN:
+                    cout << termcolor::yellow << "*" << termcolor::reset;
+                    break;
+                case LOCATION::PACMAN:
+                    cout << termcolor::bright_yellow << pacmanIcon << termcolor::reset;
+                    break;
+                case LOCATION::REDGHOST:
+                    cout << termcolor::red << ghostIcon << termcolor::reset;
+                    break;
+                case LOCATION::ORANGEGHOST:
+                    cout << termcolor::yellow << ghostIcon << termcolor::reset;
+                    break;
+                case LOCATION::PINKGHOST:
+                    cout << termcolor::magenta << ghostIcon << termcolor::reset;
+                    break;
+                case LOCATION::BLUEGHOST:
+                    cout << termcolor::blue << ghostIcon << termcolor::reset;
+                    break;
+                }
             }
         }
         cout << "\n";
@@ -177,6 +240,78 @@ DIRECTION keyHandler() {
     else if (GetAsyncKeyState(VK_LEFT) & 0x8000) return DIRECTION::LEFT;
     else if (GetAsyncKeyState(VK_DOWN) & 0x8000) return DIRECTION::DOWN;
     else return DIRECTION::ELSE;
+}
+
+//void start() {
+//    map[pacmanY][pacmanX] = LOCATION::PACMAN;
+//    map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
+//    map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
+//    map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
+//    map[rGhostY][rGhostX] = LOCATION::REDGHOST;
+//
+//    hideSeekTime = 0;
+//    hideSeek = false;
+//    isPacmanCaught = false;
+//
+//    pacmanX = 13;
+//    pacmanY = 23;
+//    pacmanBlock = 4;
+//
+//    rGhostX = 13;
+//    rGhostY = 11;
+//    redGhostTimeOut = false;
+//
+//    oGhostX = 14;
+//    oGhostY = 14;
+//    oStarted = false;
+//    orangeGhostTimeOut = false;
+//
+//    bGhostX = 12;
+//    bGhostY = 14;
+//    bStarted = false;
+//    blueGhostTimeOut = false;
+//
+//    pGhostX = 13;
+//    pGhostY = 14;
+//    pStarted = false;
+//    pinkGhostTimeOut = false;
+//}
+
+void ghostToCage(LOCATION ghost) {
+    switch (ghost) {
+    case LOCATION::REDGHOST:
+        map[rGhostY][rGhostX] = varRGhost;
+        varRGhost = LOCATION::EMPTY;
+        rGhostX = 13;
+        rGhostY = 11;
+        map[rGhostY][rGhostX] = LOCATION::REDGHOST;
+        break;
+    case LOCATION::PINKGHOST:
+        map[pGhostY][pGhostX] = varPGhost;
+        varPGhost = LOCATION::EMPTY;
+        pGhostX = 13;
+        pGhostY = 11;
+        map[pGhostY][pGhostX] = LOCATION::PINKGHOST;
+        pStarted = false;
+        break;
+    case LOCATION::BLUEGHOST:
+        map[bGhostY][bGhostX] = varBGhost;
+        varBGhost = LOCATION::EMPTY;
+        bGhostX = 13;
+        bGhostY = 11;
+        map[bGhostY][bGhostX] = LOCATION::BLUEGHOST;
+        bStarted = false;
+        break;
+    case LOCATION::ORANGEGHOST:
+        map[oGhostY][oGhostX] = varOGhost;
+        varOGhost = LOCATION::EMPTY;
+        oGhostX = 13;
+        oGhostY = 11;
+        map[oGhostY][oGhostX] = LOCATION::ORANGEGHOST;
+        oStarted = false;
+        break;
+    }
+
 }
 
 bool pacmanMove(DIRECTION dir, vector<LOCATION> textureArr) {
@@ -201,8 +336,13 @@ bool pacmanMove(DIRECTION dir, vector<LOCATION> textureArr) {
     else return false;
     if (move) {
         if (map[pacmanY][pacmanX] == LOCATION::COIN) score += 10;
+        if (checkPermission(map[pacmanY][pacmanX], ghostsList) && hideSeek) {
+            score += 200;
+            ghostToCage((LOCATION)map[pacmanY][pacmanX]);
+        }
         if (map[pacmanY][pacmanX] == LOCATION::SUPERCOIN) {
             score += 100;
+            hideSeekTime = timer + 50;
             hideSeek = true;
         }
         if (map[pacmanY][pacmanX] == LOCATION::LEFTPORT) pacmanX = 26;
@@ -302,6 +442,10 @@ void ghostMove(int& ghostX, int& ghostY, int targetX, int targetY, DIRECTION& gh
     }
     else if ((LOCATION)map[minY][minX] == LOCATION::PACMAN) {
         isPacmanCaught = true;
+        --lifes;
+        //start();
+        //show();
+        //Sleep(3000);
     }
     else {
         map[ghostY][ghostX] = varGhost;
@@ -314,49 +458,77 @@ void ghostMove(int& ghostX, int& ghostY, int targetX, int targetY, DIRECTION& gh
 }
 
 void redGhostMove() {
-    ghostMove(rGhostX, rGhostY, pacmanX, pacmanY, rGhostDir, varRGhost, LOCATION::REDGHOST, ghostRegular);
+    if (hideSeek && timer <= hideSeekTime) {
+        if (timer % 3 == 0) ghostMove(rGhostX, rGhostY, width, height, rGhostDir, varRGhost, LOCATION::REDGHOST, ghostRegular);
+    }
+    else {
+        if (timer % 2 == 0) ghostMove(rGhostX, rGhostY, pacmanX, pacmanY, rGhostDir, varRGhost, LOCATION::REDGHOST, ghostRegular);
+    }
 }
 
 void pinkGhostMove(DIRECTION &dir) {
-    if (dir == DIRECTION::RIGHT) {
-        if (pacmanX + 3 < width && checkPermission(map[pacmanY][pacmanX + 3], ghostRegular)) {
-            ghostMove(pGhostX, pGhostY, pacmanX + 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
-        }
-        else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+    if (hideSeek && timer <= hideSeekTime) {
+        if (timer % 3 == 0) ghostMove(pGhostX, pGhostY, 0, 0, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
     }
-    else if (dir == DIRECTION::LEFT) {
-        if (pacmanX - 3 > 0 && checkPermission(map[pacmanY][pacmanX - 3], ghostRegular)) {
-            ghostMove(pGhostX, pGhostY, pacmanX - 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+    else {
+        if (timer % 2 == 0) {
+            if (dir == DIRECTION::RIGHT) {
+                if (pacmanX + 3 < width && checkPermission(map[pacmanY][pacmanX + 3], ghostRegular)) {
+                    ghostMove(pGhostX, pGhostY, pacmanX + 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                }
+                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+            }
+            else if (dir == DIRECTION::LEFT) {
+                if (pacmanX - 3 > 0 && checkPermission(map[pacmanY][pacmanX - 3], ghostRegular)) {
+                    ghostMove(pGhostX, pGhostY, pacmanX - 3, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                }
+                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+            }
+            else if (dir == DIRECTION::DOWN) {
+                if (pacmanY + 3 < height && checkPermission(map[pacmanY + 3][pacmanX], ghostRegular)) {
+                    ghostMove(pGhostX, pGhostY, pacmanX, pacmanY + 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                }
+                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+            }
+            else {//Pink ghost UP
+                if (pacmanX - 2 > 0 && pacmanY - 3 > 0 && checkPermission(map[pacmanY - 2][pacmanX - 3], ghostRegular)) {
+                    ghostMove(pGhostX, pGhostY, pacmanX - 2, pacmanY - 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+                }
+                else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
+            }
         }
-        else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
-    }
-    else if (dir == DIRECTION::DOWN) {
-        if (pacmanY + 3 < height && checkPermission(map[pacmanY + 3][pacmanX], ghostRegular)) {
-            ghostMove(pGhostX, pGhostY, pacmanX, pacmanY + 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
-        }
-        else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
-    }
-    else {//Pink ghost UP
-        if (pacmanX - 2 > 0 && pacmanY - 3 > 0 && checkPermission(map[pacmanY - 2][pacmanX - 3], ghostRegular)) {
-            ghostMove(pGhostX, pGhostY, pacmanX - 2, pacmanY - 3, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
-        }
-        else ghostMove(pGhostX, pGhostY, pacmanX, pacmanY, pGhostDir, varPGhost, LOCATION::PINKGHOST, ghostRegular);
     }
 }
 
 void blueGhostMove() {
-    int targetX = 2 * pacmanX - rGhostX;
-    int targetY = 2 * pacmanY - rGhostY;
-    ghostMove(bGhostX, bGhostY, targetX, targetY, bGhostDir, varBGhost, LOCATION::BLUEGHOST, ghostRegular);
+    if (hideSeek && timer <= hideSeekTime) {
+        if (timer % 3 == 0) ghostMove(bGhostX, bGhostY, 0, width, bGhostDir, varBGhost, LOCATION::BLUEGHOST, ghostRegular);
+    }
+    else {
+        if (timer % 2 == 0) {
+            int targetX = 2 * pacmanX - rGhostX;
+            int targetY = 2 * pacmanY - rGhostY;
+            ghostMove(bGhostX, bGhostY, targetX, targetY, bGhostDir, varBGhost, LOCATION::BLUEGHOST, ghostRegular);
+        }
+    }
+    
 }
 
 void orangeGhostMove() {
-    if ((oGhostX - pacmanX) * (oGhostX - pacmanX) + (oGhostY - pacmanY) * (oGhostY - pacmanY) >= 49) {
-        ghostMove(oGhostX, oGhostY, pacmanX, pacmanY, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+    if (hideSeek && timer <= hideSeekTime) {
+        if (timer % 3 == 0) ghostMove(oGhostX, oGhostY, 0, height, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
     }
     else {
-        ghostMove(oGhostX, oGhostY, 0, 31, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+        if (timer % 2 == 0) {
+            if ((oGhostX - pacmanX) * (oGhostX - pacmanX) + (oGhostY - pacmanY) * (oGhostY - pacmanY) >= 49) {
+                ghostMove(oGhostX, oGhostY, pacmanX, pacmanY, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+            }
+            else {
+                ghostMove(oGhostX, oGhostY, 0, 31, oGhostDir, varOGhost, LOCATION::ORANGEGHOST, ghostRegular);
+            }
+        }
     }
+    
 }
 
 int main() {
@@ -374,14 +546,15 @@ int main() {
     cout << "Press Enter\n";
     while (!(GetAsyncKeyState(VK_RETURN) & 0x8000)){}//wait enter 
     while (1) {
+        if (timer == hideSeekTime) hideSeek = false;
         show();
         //Sleep(100);
         //set direction and pacman move
         curDir = keyHandler();
         if (dir != curDir && curDir != DIRECTION::ELSE) {
-            if (!pacmanMove(curDir, pacmanRegular)) pacmanMove(dir, pacmanRegular);
+            if (!pacmanMove(curDir, ghostRegular)) pacmanMove(dir, ghostRegular);
             else dir = curDir;
-        } else pacmanMove(dir, pacmanRegular);
+        } else pacmanMove(dir, ghostRegular);
         //ghosts move logic
         if (!redGhostTimeOut) redGhostMove();
         if (!pinkGhostTimeOut && timer >= 1) { 
@@ -435,6 +608,7 @@ int main() {
 
         //ouput
         cout << "Score: " << score << "\n";
+        cout << "lifes: " << lifes << "\n";
         ++timer;
     }
     return 0;
